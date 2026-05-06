@@ -688,6 +688,10 @@ class WizStockBarcodesRead(models.AbstractModel):
         self.package_id = False
         if self.product_id != product and self.lot_id.product_id != product:
             self.lot_id = False
+            # Reset accumulated quantity when switching to a different product
+            if self.option_group_id.accumulate_read_quantity:
+                self.product_qty = 0.0
+                self.packaging_qty = 0.0
         self.product_id = product
         self.product_uom_id = self.product_id.uom_id
         self.set_product_qty()
@@ -721,7 +725,12 @@ class WizStockBarcodesRead(models.AbstractModel):
             self.product_qty = self.packaging_id.qty * self.packaging_qty
         else:
             self.packaging_qty = 0.0
-            self.product_qty = 1.0
+            if self.option_group_id.accumulate_read_quantity and self.product_qty > 0:
+                # Accumulate: add 1 to the existing quantity on each scan
+                # of the same product instead of resetting to 1
+                self.product_qty += 1.0
+            else:
+                self.product_qty = 1.0
 
     def action_clean_lot(self):
         self.lot_id = False
