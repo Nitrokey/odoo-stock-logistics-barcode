@@ -448,6 +448,13 @@ class WizStockBarcodesRead(models.AbstractModel):
                     self.option_group_id.ignore_filled_fields
                     and option in options_required
                     and getattr(self, option.field_name, False)
+                    and not (
+                        # When accumulating, always re-process the product scan
+                        # so the quantity can be incremented even if product_id
+                        # is already filled from a previous scan
+                        self.option_group_id.accumulate_read_quantity
+                        and option.field_name == "product_id"
+                    )
                 ):
                     continue
                 option_func = getattr(
