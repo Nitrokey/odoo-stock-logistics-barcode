@@ -1,9 +1,11 @@
 # Copyright 2020 Carlos Roca <carlos.roca@tecnativa.com>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-from math import ceil
+from math import ceil, floor
 
 from odoo import api, fields, models
 from odoo.fields import Command
+
+from .ean_barcode import EAN_QUIET, ean_modules, modules_svg_src
 
 
 class ProductPrintingQty(models.TransientModel):
@@ -47,6 +49,57 @@ class ProductPrintingQty(models.TransientModel):
         for line in self.filtered("product_packaging_id.print_one_label_by_item"):
             factor = line.product_packaging_id.qty
             line.label_qty = ceil(line.quantity / (factor or 1.0))
+
+    def _get_label_layout(self):
+        """Sizes in CSS px for the barcode label, derived from its paper format.
+        Odoo renders with ``--zoom 96/dpi``, so one CSS px is one printer dot.
+        Font sizes are estimates and maximums, the report fits the texts to
+        ``text_width``.
+        """
+        self.ensure_one()
+        paper = (
+            self.env["ir.actions.report"]
+            ._get_report("stock_picking_product_barcode_report.label_barcode_report")
+            .get_paperformat()
+        )
+        dots_per_mm = (paper.dpi or 96) / 25.4
+        width = floor(
+            ((paper.print_page_width or 47) - paper.margin_left - paper.margin_right)
+            * dots_per_mm
+        )
+        height = floor(
+            ((paper.print_page_height or 29) - paper.margin_top - paper.margin_bottom)
+            * dots_per_mm
+        )
+        code = self.product_id.barcode or ""
+        bits = ean_modules(code)
+        bars_src = False
+        text_width = width
+        if bits and self.wizard_id.barcode_format != "gs1_128":
+            modules = len(bits) + EAN_QUIET[len(code)]
+            bars_src = modules_svg_src(bits)
+            text_width = len(bits) * max(1, floor(width / modules))
+
+        def fit(length, max_size, char_width=0.6):
+            if not length:
+                return max_size
+            return min(max_size, text_width / (length * char_width))
+
+        lot_name = self.lot_id.name or ""
+        digits_max = height * 0.2
+        name_max = height * 0.21
+        lot_max = height * 0.16
+        return {
+            "bars_src": bars_src,
+            "bars_height": round(height * (0.37 if lot_name else 0.47)),
+            "text_width": text_width,
+            "digits_max": digits_max,
+            "digits_size": fit(len(code), digits_max),
+            "name_max": name_max,
+            "name_size": fit(len(self.product_id.display_name or ""), name_max),
+            "lot_max": lot_max,
+            "lot_size": fit(len(lot_name) + 5, lot_max),
+        }
 
 
 class WizStockBarcodeSelectionPrinting(models.TransientModel):

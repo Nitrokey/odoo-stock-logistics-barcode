@@ -8,6 +8,7 @@ from odoo import Command
 from odoo.addons.base.tests.common import BaseCommon
 
 from ..controllers.main import SVGWitoutTextWriter
+from ..wizard.ean_barcode import ean_modules
 
 
 class TestStockPickingProductBarcodeReport(BaseCommon):
@@ -142,3 +143,34 @@ class TestStockPickingProductBarcodeReport(BaseCommon):
             any_order=False,
         )
         writer._group.appendChild.assert_called_once_with(element)
+
+    def test_ean_modules(self):
+        self.assertEqual(
+            ean_modules("5901234123457"),
+            "10100010110100111011001100100110111101001110101010110011011011"
+            "001000010101110010011101000100101",
+        )
+        self.assertEqual(len(ean_modules("96385074")), 67)
+        self.assertFalse(ean_modules("5901234123458"))
+        self.assertFalse(ean_modules("1001"))
+
+    def test_label_layout(self):
+        self.product_barcode.barcode = "5901234123457"
+        paper = self.env.ref("stock_picking_product_barcode_report.paperformat_label")
+        paper.write({"page_width": 30, "page_height": 15, "margin_top": 0, "dpi": 203})
+        line = self.env["stock.picking.line.print"].create(
+            {"product_id": self.product_barcode.id, "quantity": 1}
+        )
+        layout = line._get_label_layout()
+        self.assertTrue(layout["bars_src"])
+        # 2 printer dots per module
+        self.assertEqual(layout["text_width"], 95 * 2)
+        html = (
+            self.env["ir.actions.report"]
+            ._render_qweb_html(
+                "stock_picking_product_barcode_report.label_barcode_report", line.ids
+            )[0]
+            .decode()
+        )
+        self.assertIn("data:image/svg+xml;base64,", html)
+        self.assertEqual(html.count("5901234123457"), 1)
