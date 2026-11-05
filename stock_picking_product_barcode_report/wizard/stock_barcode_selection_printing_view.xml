@@ -25,7 +25,7 @@
                 <p
                     invisible="is_custom_label"
                 >It only appears here products with barcode defined</p>
-                <div invisible="is_custom_label">
+                <div invisible="not is_custom_label">
                     <field name="is_custom_label" invisible="1" />
                     <strong>Label Quantity</strong>
                     <br />
