@@ -5,102 +5,160 @@
             <div class="page text-justify">
                 <t t-set="layout" t-value="doc._get_label_layout()" />
                 <t t-foreach="doc.label_qty" t-as="i">
-                    <div class="text-center">
-                        <t t-if="doc.wizard_id.barcode_format == 'gs1_128'">
-                            <t t-set="barcode_type" t-value="'gs1_128'" />
-                            <t
-                                t-set="barcode"
-                                t-value="doc.product_id.barcode.zfill(14)"
-                            />
-                            <t t-set="lot" t-value="doc.lot_id" />
-                            <t t-if="lot">
+                    <div
+                        class="o_label"
+                        t-att-data-height="layout['height']"
+                        t-att-data-min="layout['min_size']"
+                    >
+                        <div class="text-center">
+                            <t t-if="doc.wizard_id.barcode_format == 'gs1_128'">
+                                <t t-set="barcode_type" t-value="'gs1_128'" />
                                 <t
-                                    t-set="value"
-                                    t-value="'02' + barcode + '10' + lot.name"
+                                    t-set="barcode"
+                                    t-value="doc.product_id.barcode.zfill(14)"
                                 />
-                                <img
-                                    t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % (barcode_type, value, 600, 60)"
-                                    style="width:100%;height:70px;margin: 0px 0px -25px 0px"
-                                    alt="Barcode"
-                                />
-                                <span
-                                    t-esc="'(02)' + barcode + '(10)' + lot.name"
-                                    style="font-size: 6px;"
-                                />
+                                <t t-set="lot" t-value="doc.lot_id" />
+                                <t t-if="lot">
+                                    <t
+                                        t-set="value"
+                                        t-value="'02' + barcode + '10' + lot.name"
+                                    />
+                                    <img
+                                        t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % (barcode_type, value, 600, 60)"
+                                        style="width:100%;height:70px;margin: 0px 0px -25px 0px"
+                                        alt="Barcode"
+                                    />
+                                    <span
+                                        t-esc="'(02)' + barcode + '(10)' + lot.name"
+                                        style="font-size: 6px;"
+                                    />
+                                </t>
+                                <t t-else="">
+                                    <t t-set="value" t-value="'02' + barcode" />
+                                    <img
+                                        t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % (barcode_type, value, 600, 60)"
+                                        style="width:100%;height:70px;margin: 0px 0px -25px 0px"
+                                        alt="Barcode"
+                                    />
+                                    <span
+                                        t-esc="'(02)' + barcode"
+                                        style="font-size: 6px;"
+                                    />
+                                </t>
                             </t>
                             <t t-else="">
-                                <t t-set="value" t-value="'02' + barcode" />
                                 <img
-                                    t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % (barcode_type, value, 600, 60)"
-                                    style="width:100%;height:70px;margin: 0px 0px -25px 0px"
+                                    t-if="layout['bars_src']"
+                                    class="o_label_bars"
+                                    t-att-data-min="layout['bars_min']"
+                                    t-att-src="layout['bars_src']"
+                                    t-attf-style="display: block; margin: 0 auto; width: {{ layout['text_width'] }}px; height: {{ layout['bars_height'] }}px;"
                                     alt="Barcode"
                                 />
-                                <span
-                                    t-esc="'(02)' + barcode"
-                                    style="font-size: 6px;"
+                                <img
+                                    t-else=""
+                                    class="o_label_bars"
+                                    t-att-data-min="layout['bars_min']"
+                                    t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', doc.product_id.barcode, 600, 100)"
+                                    t-attf-style="width: 100%; height: {{ layout['bars_height'] }}px;"
+                                    alt="Barcode"
                                 />
                             </t>
-                        </t>
-                        <t t-else="">
-                            <img
-                                t-if="layout['bars_src']"
-                                t-att-src="layout['bars_src']"
-                                t-attf-style="display: block; margin: 0 auto; width: {{ layout['text_width'] }}px; height: {{ layout['bars_height'] }}px;"
-                                alt="Barcode"
-                            />
-                            <img
-                                t-else=""
-                                t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', doc.product_id.barcode, 600, 100)"
-                                t-attf-style="width: 100%; height: {{ layout['bars_height'] }}px;"
-                                alt="Barcode"
-                            />
-                        </t>
-                    </div>
-                    <div
-                        class="text-center"
-                        t-attf-style="width: {{ layout['text_width'] }}px; margin: 0 auto; white-space: nowrap; overflow: hidden; line-height: 1.1;"
-                    >
-                        <div
-                            t-if="doc.wizard_id.barcode_format != 'gs1_128'"
-                            class="o_label_fit"
-                            t-att-data-max="layout['digits_max']"
-                            t-attf-style="font-size: {{ '%.1f' % layout['digits_size'] }}px;"
-                        >
-                            <span t-out="doc.product_id.barcode" />
                         </div>
                         <div
-                            class="o_label_fit"
-                            t-att-data-max="layout['name_max']"
-                            t-attf-style="font-weight: bold; font-size: {{ '%.1f' % layout['name_size'] }}px;"
+                            class="text-center"
+                            t-attf-style="width: {{ layout['text_width'] }}px; margin: 0 auto; text-align: center; white-space: nowrap; overflow: hidden; line-height: 1.1;"
                         >
-                            <span t-field="doc.product_id.display_name" />
-                        </div>
-                        <div
-                            t-if="doc.lot_id"
-                            class="o_label_fit"
-                            t-att-data-max="layout['lot_max']"
-                            t-attf-style="font-size: {{ '%.1f' % layout['lot_size'] }}px;"
-                        >
-                            <span>Lot: <span t-field="doc.lot_id.name" /></span>
+                            <div
+                                t-if="doc.wizard_id.barcode_format != 'gs1_128'"
+                                class="o_label_fit"
+                                t-att-data-max="layout['digits_max']"
+                                t-attf-style="font-size: {{ layout['digits_size'] }}px;"
+                            >
+                                <span>
+                                    <span
+                                        class="o_label_tail"
+                                        t-out="doc.product_id.barcode"
+                                    />
+                                </span>
+                            </div>
+                            <div
+                                class="o_label_fit o_label_name"
+                                t-att-data-max="layout['name_max']"
+                                t-attf-style="font-weight: bold; font-size: {{ layout['name_size'] }}px;"
+                            >
+                                <span t-out="layout['name']" />
+                            </div>
+                            <div
+                                t-if="doc.lot_id"
+                                class="o_label_fit"
+                                t-att-data-max="layout['lot_max']"
+                                t-attf-style="font-size: {{ layout['lot_size'] }}px;"
+                            >
+                                <span>Lot: <span
+                                    class="o_label_tail"
+                                    t-field="doc.lot_id.name"
+                                /></span>
+                            </div>
                         </div>
                     </div>
                     <p style="page-break-after:always;" />
                 </t>
                 <script>
                     window.addEventListener("load", function () {
-                        var lines = document.querySelectorAll(".o_label_fit");
-                        for (var i = 0; i !== lines.length; i++) {
-                            var line = lines[i];
-                            var max = parseFloat(line.getAttribute("data-max"));
-                            line.style.fontSize = max + "px";
-                            var text = line.getElementsByTagName("span")[0];
-                            var width = text.getBoundingClientRect().width;
-                            if (width) {
-                                var size = max * line.clientWidth / width;
-                                line.style.fontSize = Math.min(max, size) + "px";
-                            }
+                        var labels = document.querySelectorAll(".o_label");
+                        for (var i = 0; i !== labels.length; i++) {
+                            fitLabel(labels[i]);
                         }
                     });
+                    function fitLabel(label) {
+                        var min = parseFloat(label.getAttribute("data-min"));
+                        var lines = label.querySelectorAll(".o_label_fit");
+                        for (var i = 0; i !== lines.length; i++) {
+                            fitLine(lines[i], min);
+                        }
+                        var over = label.offsetHeight - parseFloat(label.getAttribute("data-height"));
+                        var bars = label.querySelector(".o_label_bars");
+                        if (over &gt; 0 &amp;&amp; bars) {
+                            var barsMin = parseFloat(bars.getAttribute("data-min"));
+                            var barsHeight = Math.max(barsMin, bars.offsetHeight - over);
+                            over -= bars.offsetHeight - barsHeight;
+                            bars.style.height = barsHeight + "px";
+                        }
+                        var name = label.querySelector(".o_label_name");
+                        if (over &gt; 0 &amp;&amp; name) {
+                            var lineHeight = parseFloat(name.style.fontSize) * 1.1;
+                            var lineCount = Math.max(1, Math.floor((name.offsetHeight - over) / lineHeight));
+                            name.style.maxHeight = lineCount * lineHeight + "px";
+                            name.style.overflow = "hidden";
+                        }
+                    }
+                    function fitLine(line, min) {
+                        var max = parseFloat(line.getAttribute("data-max"));
+                        var text = line.getElementsByTagName("span")[0];
+                        line.style.fontSize = max + "px";
+                        var width = text.getBoundingClientRect().width;
+                        if (!width) {
+                            return;
+                        }
+                        var size = Math.floor(max * line.clientWidth / width);
+                        line.style.fontSize = Math.max(min, Math.min(max, size)) + "px";
+                        if (text.getBoundingClientRect().width &lt;= line.clientWidth) {
+                            return;
+                        }
+                        var tail = line.querySelector(".o_label_tail");
+                        if (!tail) {
+                            line.style.whiteSpace = "normal";
+                            line.style.wordWrap = "break-word";
+                            return;
+                        }
+                        var value = tail.textContent;
+                        var start = 0;
+                        while (start &lt; value.length &amp;&amp; text.getBoundingClientRect().width &gt; line.clientWidth) {
+                            start++;
+                            tail.textContent = "…" + value.slice(start);
+                        }
+                    }
                 </script>
             </div>
         </t>

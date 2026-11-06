@@ -174,3 +174,22 @@ class TestStockPickingProductBarcodeReport(BaseCommon):
         )
         self.assertIn("data:image/svg+xml;base64,", html)
         self.assertEqual(html.count("5901234123457"), 1)
+
+    def test_label_layout_min_font(self):
+        self.product_barcode.write(
+            {"name": "Test Product " * 10, "default_code": "1001"}
+        )
+        paper = self.env.ref("stock_picking_product_barcode_report.paperformat_label")
+        paper.write({"page_width": 30, "page_height": 15, "margin_top": 0, "dpi": 203})
+        lot = self.env["stock.lot"].create(
+            {"name": "8" * 40, "product_id": self.product_barcode.id}
+        )
+        line = self.env["stock.picking.line.print"].create(
+            {"product_id": self.product_barcode.id, "quantity": 1, "lot_id": lot.id}
+        )
+        layout = line._get_label_layout()
+        # 1.5 mm at 203 dpi
+        self.assertEqual(layout["min_size"], 12)
+        self.assertEqual(layout["name_size"], 12)
+        self.assertEqual(layout["lot_size"], 12)
+        self.assertEqual(layout["name"], self.product_barcode.name)

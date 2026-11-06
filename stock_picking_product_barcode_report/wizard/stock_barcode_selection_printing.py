@@ -7,6 +7,11 @@ from odoo.fields import Command
 
 from .ean_barcode import EAN_QUIET, ean_modules, modules_svg_src
 
+# Smallest font size of the label texts
+LABEL_MIN_FONT_MM = 1.5
+# Smallest height of the bars when long texts need more room
+LABEL_MIN_BARS_MM = 4
+
 
 class ProductPrintingQty(models.TransientModel):
     _name = "stock.picking.line.print"
@@ -54,7 +59,7 @@ class ProductPrintingQty(models.TransientModel):
         """Sizes in CSS px for the barcode label, derived from its paper format.
         Odoo renders with ``--zoom 96/dpi``, so one CSS px is one printer dot.
         Font sizes are estimates and maximums, the report fits the texts to
-        ``text_width``.
+        ``text_width`` and ``height``.
         """
         self.ensure_one()
         paper = (
@@ -80,23 +85,33 @@ class ProductPrintingQty(models.TransientModel):
             bars_src = modules_svg_src(bits)
             text_width = len(bits) * max(1, floor(width / modules))
 
-        def fit(length, max_size, char_width=0.6):
-            if not length:
-                return max_size
-            return min(max_size, text_width / (length * char_width))
+        min_size = round(LABEL_MIN_FONT_MM * dots_per_mm)
 
+        def fit(length, max_size, char_width=0.6):
+            if length:
+                max_size = min(max_size, text_width / (length * char_width))
+            return max(min_size, floor(max_size))
+
+        product = self.product_id
+        if product.default_code and product.default_code == code:
+            product = product.with_context(display_default_code=False)
+        name = product.display_name or ""
         lot_name = self.lot_id.name or ""
-        digits_max = height * 0.2
-        name_max = height * 0.21
-        lot_max = height * 0.16
+        digits_max = max(min_size, floor(height * 0.2))
+        name_max = max(min_size, floor(height * 0.21))
+        lot_max = max(min_size, floor(height * 0.16))
         return {
+            "height": height,
+            "min_size": min_size,
             "bars_src": bars_src,
             "bars_height": round(height * (0.37 if lot_name else 0.47)),
+            "bars_min": round(LABEL_MIN_BARS_MM * dots_per_mm),
             "text_width": text_width,
+            "name": name,
             "digits_max": digits_max,
             "digits_size": fit(len(code), digits_max),
             "name_max": name_max,
-            "name_size": fit(len(self.product_id.display_name or ""), name_max),
+            "name_size": fit(len(name), name_max),
             "lot_max": lot_max,
             "lot_size": fit(len(lot_name) + 5, lot_max),
         }
