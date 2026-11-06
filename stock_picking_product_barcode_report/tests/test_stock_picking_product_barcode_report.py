@@ -8,7 +8,7 @@ from odoo import Command
 from odoo.addons.base.tests.common import BaseCommon
 
 from ..controllers.main import SVGWitoutTextWriter
-from ..wizard.ean_barcode import ean_modules
+from ..wizard.ean_barcode import code128_modules, ean_modules
 
 
 class TestStockPickingProductBarcodeReport(BaseCommon):
@@ -193,3 +193,17 @@ class TestStockPickingProductBarcodeReport(BaseCommon):
         self.assertEqual(layout["name_size"], 12)
         self.assertEqual(layout["lot_size"], 12)
         self.assertEqual(layout["name"], self.product_barcode.name)
+
+    def test_label_layout_code128(self):
+        self.assertEqual(len(code128_modules("1001")), 57)
+        self.assertFalse(code128_modules("ä"))
+        paper = self.env.ref("stock_picking_product_barcode_report.paperformat_label")
+        paper.write({"page_width": 30, "page_height": 15, "margin_top": 0, "dpi": 203})
+        line = self.env["stock.picking.line.print"].create(
+            {"product_id": self.product_barcode.id, "quantity": 1}
+        )
+        layout = line._get_label_layout()
+        self.assertTrue(layout["bars_src"])
+        # 3 printer dots per module, the texts keep the label width
+        self.assertEqual(layout["bars_width"], 57 * 3)
+        self.assertEqual(layout["text_width"], 239)

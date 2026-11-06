@@ -2,6 +2,9 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 import base64
 
+import barcode  # pylint: disable=missing-manifest-dependency
+from barcode.errors import BarcodeError  # pylint: disable=missing-manifest-dependency
+
 from odoo.tools.barcode import get_barcode_check_digit
 
 EAN_L = [
@@ -32,6 +35,7 @@ EAN13_PARITY = [
 ]
 # Minimum quiet zones (left + right) in modules
 EAN_QUIET = {13: 11 + 7, 8: 7 + 7}
+CODE128_QUIET = 10 + 10
 
 
 def ean_modules(code):
@@ -54,6 +58,17 @@ def ean_modules(code):
         left = "".join(EAN_L[int(d)] for d in code[:4])
         right = code[4:]
     return "101" + left + "01010" + "".join(EAN_R[int(d)] for d in right) + "101"
+
+
+def code128_modules(code):
+    """Return the Code 128 symbol as a string of modules ("1" = bar), or an
+    empty string if the code can't be encoded"""
+    if not code:
+        return ""
+    try:
+        return barcode.get("code128", code).build()[0]
+    except BarcodeError:
+        return ""
 
 
 def modules_svg_src(bits):

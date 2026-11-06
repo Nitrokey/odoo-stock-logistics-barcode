@@ -5,7 +5,13 @@ from math import ceil, floor
 from odoo import api, fields, models
 from odoo.fields import Command
 
-from .ean_barcode import EAN_QUIET, ean_modules, modules_svg_src
+from .ean_barcode import (
+    CODE128_QUIET,
+    EAN_QUIET,
+    code128_modules,
+    ean_modules,
+    modules_svg_src,
+)
 
 # Smallest font size of the label texts
 LABEL_MIN_FONT_MM = 1.5
@@ -77,13 +83,19 @@ class ProductPrintingQty(models.TransientModel):
             * dots_per_mm
         )
         code = self.product_id.barcode or ""
-        bits = ean_modules(code)
         bars_src = False
-        text_width = width
-        if bits and self.wizard_id.barcode_format != "gs1_128":
-            modules = len(bits) + EAN_QUIET[len(code)]
-            bars_src = modules_svg_src(bits)
-            text_width = len(bits) * max(1, floor(width / modules))
+        bars_width = text_width = width
+        if self.wizard_id.barcode_format != "gs1_128":
+            bits = ean_modules(code)
+            quiet = EAN_QUIET.get(len(code))
+            if not bits:
+                bits = code128_modules(code)
+                quiet = CODE128_QUIET
+            if bits:
+                bars_src = modules_svg_src(bits)
+                bars_width = len(bits) * max(1, floor(width / (len(bits) + quiet)))
+                if quiet != CODE128_QUIET:
+                    text_width = bars_width
 
         min_size = round(LABEL_MIN_FONT_MM * dots_per_mm)
 
@@ -104,6 +116,7 @@ class ProductPrintingQty(models.TransientModel):
             "height": height,
             "min_size": min_size,
             "bars_src": bars_src,
+            "bars_width": bars_width,
             "bars_height": round(height * (0.37 if lot_name else 0.47)),
             "bars_min": round(LABEL_MIN_BARS_MM * dots_per_mm),
             "text_width": text_width,

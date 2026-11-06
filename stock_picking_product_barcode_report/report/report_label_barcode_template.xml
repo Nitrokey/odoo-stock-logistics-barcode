@@ -52,7 +52,7 @@
                                     class="o_label_bars"
                                     t-att-data-min="layout['bars_min']"
                                     t-att-src="layout['bars_src']"
-                                    t-attf-style="display: block; margin: 0 auto; width: {{ layout['text_width'] }}px; height: {{ layout['bars_height'] }}px;"
+                                    t-attf-style="display: block; margin: 0 auto; width: {{ layout['bars_width'] }}px; height: {{ layout['bars_height'] }}px;"
                                     alt="Barcode"
                                 />
                                 <img
