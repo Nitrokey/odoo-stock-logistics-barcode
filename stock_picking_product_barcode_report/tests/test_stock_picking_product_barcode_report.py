@@ -4,6 +4,7 @@
 from unittest.mock import MagicMock, call
 
 from odoo import Command
+from odoo.exceptions import UserError
 
 from odoo.addons.base.tests.common import BaseCommon
 
@@ -207,3 +208,13 @@ class TestStockPickingProductBarcodeReport(BaseCommon):
         # 3 printer dots per module, the texts keep the label width
         self.assertEqual(layout["bars_width"], 57 * 3)
         self.assertEqual(layout["text_width"], 239)
+
+    def test_product_barcode_label_wizard(self):
+        action = self.product_barcode.product_tmpl_id.action_open_barcode_label_wizard()
+        wizard = (
+            self.env[action["res_model"]].with_context(**action["context"]).create({})
+        )
+        self.assertEqual(wizard.product_print_moves.product_id, self.product_barcode)
+        self.assertEqual(wizard.product_print_moves.label_qty, 1)
+        with self.assertRaises(UserError):
+            self.product_no_barcode.action_open_barcode_label_wizard()

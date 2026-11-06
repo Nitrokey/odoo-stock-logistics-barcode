@@ -154,6 +154,9 @@ class WizStockBarcodeSelectionPrinting(models.TransientModel):
         if ctx.get("active_ids") and ctx.get("active_model") == "stock.lot":
             lines = self._get_lines_from_lots()
             res.update({"product_print_moves": lines})
+        if ctx.get("barcode_label_product_ids"):
+            lines = self._get_lines_from_products()
+            res.update({"product_print_moves": lines})
         return res
 
     def _default_barcode_report(self):
@@ -223,6 +226,22 @@ class WizStockBarcodeSelectionPrinting(models.TransientModel):
                 )
             )
         return lines
+
+    def _get_lines_from_products(self):
+        products = self.env["product.product"].browse(
+            self.env.context["barcode_label_product_ids"]
+        )
+        return [
+            Command.create(
+                {
+                    "product_id": product.id,
+                    "label_qty": 1,
+                    "quantity": 1,
+                    "uom_id": product.uom_id.id,
+                },
+            )
+            for product in products
+        ]
 
     def _get_lines_from_lots(self):
         lines = []
